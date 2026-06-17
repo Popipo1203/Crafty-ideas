@@ -1,0 +1,12 @@
+{
+  "name": "craftly-ideas",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A handcraft ideas MVP with prompt-bound project generation and related web inspiration links.",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

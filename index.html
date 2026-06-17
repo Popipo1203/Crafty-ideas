@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Craftly Ideas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="#top" aria-label="Craftly Ideas home">
+        <span class="brand-mark">C</span>
+        <span>Craftly Ideas</span>
+      </a>
+      <nav aria-label="Primary navigation">
+        <a href="#generator">Generate</a>
+        <a href="#how-it-works">How it works</a>
+        <a href="#privacy">Privacy</a>
+        <a href="#terms">Terms</a>
+      </nav>
+      <div class="auth-actions">
+        <button class="ghost-button" data-auth-open="login">Log in</button>
+        <button class="primary-button" data-auth-open="signup">Sign up</button>
+      </div>
+      <button class="icon-button menu-toggle" aria-label="Open navigation" aria-expanded="false">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Fresh projects from whatever you have nearby</p>
+          <h1>Handcraft ideas that feel original, doable, and worth making.</h1>
+          <p class="hero-lede">
+            Describe your materials, time, style, or occasion. Craftly gives you one focused idea
+            with clear steps, a supply list, and a little creative spark.
+          </p>
+          <div class="hero-actions">
+            <a class="primary-button large" href="#generator">Try the generator</a>
+            <button class="secondary-button large" data-auth-open="signup">Create free account</button>
+          </div>
+          <div class="trust-strip" id="privacy">
+            <span class="shield-icon" aria-hidden="true">✓</span>
+            <span>Your prompts and creations are private to you and are not used to train AI.</span>
+          </div>
+        </div>
+
+        <div class="hero-visual" aria-label="Craft workspace preview">
+          <div class="photo-card">
+            <img
+              src="https://images.unsplash.com/photo-1452860606245-08befc0ff44b?auto=format&fit=crop&w=980&q=80"
+              alt="Hands arranging colorful handmade craft materials"
+            />
+          </div>
+          <div class="floating-note note-one">
+            <span>Tonight</span>
+            <strong>Pressed-flower bookmark set</strong>
+          </div>
+          <div class="floating-note note-two">
+            <span>Uses</span>
+            <strong>paper scraps + twine</strong>
+          </div>
+        </div>
+      </section>
+
+      <section class="generator-section" id="generator">
+        <div class="section-heading">
+          <p class="eyebrow">Idea generator</p>
+          <h2>Tell Craftly what you want to make.</h2>
+        </div>
+
+        <div class="workspace">
+          <section class="generator-panel" aria-labelledby="prompt-title">
+            <div class="panel-topline">
+              <h3 id="prompt-title">Creative prompt</h3>
+              <span class="privacy-pill">Not used to train AI</span>
+            </div>
+            <label for="promptInput">What materials, vibe, age group, or occasion should the idea fit?</label>
+            <textarea
+              id="promptInput"
+              rows="7"
+              placeholder="Example: I have cardboard, yarn, buttons, and 45 minutes. I want something cozy for a teen bedroom."
+            ></textarea>
+            <div class="controls-grid">
+              <label>
+                Time
+                <select id="timeInput">
+                  <option>30 minutes</option>
+                  <option selected>45 minutes</option>
+                  <option>1 hour</option>
+                  <option>Weekend project</option>
+                </select>
+              </label>
+              <label>
+                Difficulty
+                <select id="difficultyInput">
+                  <option>Easy</option>
+                  <option selected>Medium</option>
+                  <option>Detailed</option>
+                </select>
+              </label>
+              <label>
+                Style
+                <select id="styleInput">
+                  <option selected>Modern handmade</option>
+                  <option>Playful colorful</option>
+                  <option>Minimal natural</option>
+                  <option>Gift-ready</option>
+                </select>
+              </label>
+            </div>
+            <div class="button-row">
+              <button class="primary-button large" id="generateButton">Generate one idea</button>
+              <button class="ghost-button large" id="surpriseButton">Surprise me</button>
+            </div>
+          </section>
+
+          <section class="result-panel" aria-live="polite" aria-labelledby="ideaTitle">
+            <div class="result-empty" id="emptyState">
+              <span class="spark-badge">Start here</span>
+              <h3 id="ideaTitle">Your first handcraft idea will appear here.</h3>
+              <p>
+                You will get one complete concept based only on the materials in your prompt, plus
+                step-by-step instructions and a finishing touch.
+              </p>
+            </div>
+            <article class="idea-card hidden" id="ideaCard">
+              <div class="idea-header">
+                <span class="spark-badge" id="ideaCategory">Home decor</span>
+                <button class="icon-save" id="saveIdeaButton" aria-label="Save idea">♡</button>
+              </div>
+              <h3 id="generatedTitle"></h3>
+              <p id="generatedIntro"></p>
+              <div class="idea-meta">
+                <span id="generatedTime"></span>
+                <span id="generatedDifficulty"></span>
+                <span id="generatedStyle"></span>
+              </div>
+              <div class="idea-columns">
+                <div>
+                  <h4>Supplies</h4>
+                  <ul id="suppliesList"></ul>
+                </div>
+                <div>
+                  <h4>Steps</h4>
+                  <ol id="stepsList"></ol>
+                </div>
+              </div>
+              <div class="finishing-touch">
+                <strong>Finishing touch</strong>
+                <p id="finishingTouch"></p>
+              </div>
+              <div class="source-card" id="sourceCard">
+                <strong>Related web inspiration</strong>
+                <p id="sourceSummary">Finding a directly related link from your prompt.</p>
+                <a id="sourceLink" href="#" target="_blank" rel="noopener">Open related link</a>
+              </div>
+            </article>
+          </section>
+        </div>
+      </section>
+
+      <section class="end-details" aria-label="App details">
+        <div class="detail-block" id="how-it-works">
+          <p class="eyebrow">How it works</p>
+          <h2>Simple from prompt to project.</h2>
+          <div class="detail-list">
+            <p><strong>Prompt naturally.</strong> Mention materials, age range, room, holiday, budget, or mood.</p>
+            <p><strong>Get one strong idea.</strong> Craftly keeps the result focused instead of giving you list overload.</p>
+            <p><strong>Make it yours.</strong> Follow the steps, then personalize the finishing touch.</p>
+          </div>
+        </div>
+
+        <div class="detail-block terms-block" id="terms">
+          <p class="eyebrow">Terms & Conditions</p>
+          <h2>Clear rules for a creative space.</h2>
+          <div class="detail-list">
+            <p>Craftly Ideas is an MVP preview for generating handcraft inspiration and project instructions.</p>
+            <p>Your prompts and creations are private to you and are not used to train AI.</p>
+            <p>Generated craft steps are suggestions. Use safe tools, age-appropriate materials, and adult supervision when needed.</p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <div class="auth-modal hidden" id="authModal" role="dialog" aria-modal="true" aria-labelledby="authTitle">
+      <div class="modal-backdrop" data-auth-close></div>
+      <section class="auth-card">
+        <button class="close-button" data-auth-close aria-label="Close">×</button>
+        <div class="auth-tabs" role="tablist" aria-label="Authentication">
+          <button class="auth-tab active" id="loginTab" data-auth-tab="login" role="tab">Log in</button>
+          <button class="auth-tab" id="signupTab" data-auth-tab="signup" role="tab">Sign up</button>
+        </div>
+        <h2 id="authTitle">Welcome back</h2>
+        <p id="authSubtitle">Save your favorite ideas and revisit them later.</p>
+        <div class="social-auth" aria-label="Social sign in options">
+          <button class="social-button apple-button" type="button" data-social-auth="Apple">
+            <span class="social-mark" aria-hidden="true"></span>
+            <span>Continue with Apple</span>
+          </button>
+          <button class="social-button google-button" type="button" data-social-auth="Google">
+            <span class="google-mark" aria-hidden="true">G</span>
+            <span>Continue with Google</span>
+          </button>
+        </div>
+        <div class="auth-divider"><span>or</span></div>
+        <form id="authForm">
+          <label>
+            Email
+            <input type="email" id="emailInput" autocomplete="email" placeholder="you@example.com" required />
+          </label>
+          <label>
+            Password
+            <input
+              type="password"
+              id="passwordInput"
+              autocomplete="current-password"
+              placeholder="At least 8 characters"
+              minlength="8"
+              required
+            />
+          </label>
+          <label class="signup-only hidden" id="nameField">
+            Display name
+            <input type="text" id="nameInput" autocomplete="name" placeholder="Creative maker" />
+          </label>
+          <button class="primary-button large full" type="submit" id="authSubmit">Log in</button>
+        </form>
+        <p class="auth-note">MVP preview only. Authentication is simulated locally for now.</p>
+      </section>
+    </div>
+
+    <div class="toast hidden" id="toast" role="status"></div>
+
+    <script src="script.js"></script>
+  </body>
+</html>

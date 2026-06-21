@@ -51,6 +51,11 @@ button {
   cursor: pointer;
 }
 
+button:disabled {
+  cursor: wait;
+  opacity: 0.68;
+}
+
 .site-header {
   position: sticky;
   top: 0;
@@ -111,6 +116,16 @@ nav a:hover {
   align-items: center;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.account-label {
+  max-width: 190px;
+  color: #3f4a4d;
+  font-size: 0.9rem;
+  font-weight: 900;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .primary-button,
@@ -322,6 +337,7 @@ h1 {
 
 .section-heading,
 .workspace,
+.saved-section,
 .end-details {
   width: min(1180px, calc(100% - 32px));
   margin: 0 auto;
@@ -582,6 +598,72 @@ li {
   font-weight: 900;
   text-decoration: underline;
   text-underline-offset: 4px;
+}
+
+.saved-section {
+  padding: 74px 0 6px;
+}
+
+.saved-panel {
+  min-height: 150px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 44px rgba(32, 33, 36, 0.06);
+  padding: clamp(18px, 3vw, 26px);
+}
+
+.saved-empty {
+  max-width: 660px;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.65;
+  font-weight: 700;
+}
+
+.saved-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px;
+}
+
+.saved-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(32, 33, 36, 0.12);
+  border-radius: 8px;
+  background: #fffdf8;
+}
+
+.saved-card-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.saved-card h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  line-height: 1.28;
+}
+
+.saved-card p {
+  margin: 0;
+  color: #4f555c;
+  line-height: 1.55;
+}
+
+.saved-card small {
+  color: #3f6f44;
+  font-weight: 900;
+  line-height: 1.4;
 }
 
 .end-details {
@@ -847,6 +929,7 @@ li {
 
   .hero,
   .workspace,
+  .saved-grid,
   .end-details {
     grid-template-columns: 1fr;
   }
@@ -875,6 +958,7 @@ li {
   .hero,
   .section-heading,
   .workspace,
+  .saved-section,
   .end-details {
     width: min(100% - 24px, 1180px);
   }

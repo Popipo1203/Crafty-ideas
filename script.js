@@ -64,6 +64,13 @@ const sourceLink = document.querySelector("#sourceLink");
 const toast = document.querySelector("#toast");
 const header = document.querySelector(".site-header");
 const menuToggle = document.querySelector(".menu-toggle");
+const accountLabel = document.querySelector("#accountLabel");
+const loginButton = document.querySelector("#loginButton");
+const signupButton = document.querySelector("#signupButton");
+const logoutButton = document.querySelector("#logoutButton");
+const savedAuthButton = document.querySelector("#savedAuthButton");
+const savedEmpty = document.querySelector("#savedEmpty");
+const savedGrid = document.querySelector("#savedGrid");
 
 const authModal = document.querySelector("#authModal");
 const authTitle = document.querySelector("#authTitle");
@@ -76,10 +83,11 @@ const nameField = document.querySelector("#nameField");
 const emailInput = document.querySelector("#emailInput");
 const passwordInput = document.querySelector("#passwordInput");
 const nameInput = document.querySelector("#nameInput");
-const socialAuthButtons = document.querySelectorAll("[data-social-auth]");
 
 let authMode = "login";
 let activeIdea = null;
+let currentUser = null;
+let savedIdeas = [];
 let toastTimer = null;
 
 async function renderIdea() {
@@ -118,8 +126,7 @@ async function renderIdea() {
 
   emptyState.classList.add("hidden");
   ideaCard.classList.remove("hidden");
-  saveIdeaButton.classList.remove("saved");
-  saveIdeaButton.textContent = "♡";
+  updateSaveButtonState();
 
   const source = await fetchRelatedSource(activeIdea);
   renderSource(source);
@@ -182,22 +189,25 @@ function buildPromptBoundIdea({ text, materials, time, difficulty, style }) {
   const primary = materials[0];
   const secondary = materials[1] || materials[0];
   const accent = materials[2] || secondary;
+  const mood = inferPromptMood(normalized, style);
+  const useCase = inferUseCase(normalized);
   const hasAdhesive = materials.some((item) => item.includes("glue") || item.includes("tape"));
   const hasFlexible = materials.some((item) =>
     ["yarn", "twine", "ribbon", "string", "wire", "pipe cleaners"].some((word) => item.includes(word)),
   );
   const category = getPromptCategory(normalized, materials);
-  const title = getPromptTitle({ category, primary, style });
+  const concept = getCreativeConcept({ category, primary, secondary, accent, mood, useCase, materials });
+  const title = getPromptTitle({ concept, primary, style, mood });
   const joinMethod = hasAdhesive
-    ? `Use ${materials.find((item) => item.includes("glue") || item.includes("tape"))} only where pieces need to stay fixed.`
+    ? `Use ${materials.find((item) => item.includes("glue") || item.includes("tape"))} to secure the main form, then leave a few edges lifted for dimension.`
     : hasFlexible
-      ? `Use ${materials.find((item) => ["yarn", "twine", "ribbon", "string", "wire"].some((word) => item.includes(word)))} to wrap, tie, or bundle the piece without adding extra supplies.`
-      : "Use folding, layering, tucking, balancing, or arranging so you do not need extra materials.";
+      ? `Use ${materials.find((item) => ["yarn", "twine", "ribbon", "string", "wire"].some((word) => item.includes(word)))} as both structure and decoration: wrap, knot, fringe, or suspend part of the piece.`
+      : "Use folding, layering, slotting, weaving, or balancing so the form feels designed rather than simply assembled.";
 
   return {
     category,
     title,
-    intro: `A ${style.toLowerCase()} project built only from the materials in your prompt: ${formatList(materials)}.`,
+    intro: `A ${mood} ${style.toLowerCase()} idea anchored in your prompt materials: ${formatList(materials)}. It adds shape, story, and a clear purpose without drifting away from what you described.`,
     supplies: materials,
     time,
     difficulty,
@@ -205,14 +215,14 @@ function buildPromptBoundIdea({ text, materials, time, difficulty, style }) {
     prompt: text,
     searchQuery: buildSearchQuery({ text, materials, category }),
     steps: [
-      `Set out only these prompt materials: ${formatList(materials)}.`,
-      `Choose ${primary} as the main structure or visual base for the project.`,
-      `Add ${secondary} to create contrast, texture, or a useful second layer.`,
+      `Turn the prompt into a concept: make a ${concept.toLowerCase()} for ${useCase}.`,
+      `Use ${primary} as the main shape, base, or repeated motif so the piece has one clear visual anchor.`,
+      `Layer ${secondary} to create contrast, movement, texture, or a useful second surface.`,
       `${joinMethod}`,
-      `Use ${accent} as the most visible detail so the design feels intentional.`,
-      `Pause and remove anything that was not named in your prompt before calling the project finished.`,
+      `Feature ${accent} as the signature detail: cluster it, outline with it, turn it into tabs, charms, labels, or a small focal pattern.`,
+      `Add one optional household basic only if needed, such as scissors, a pencil mark, or a tiny knot, while keeping the visible design based on the prompt.`,
     ],
-    finish: `Give the finished piece a name based on ${primary}, then save this idea knowing the supply list stayed locked to your prompt.`,
+    finish: `Give it a small story, label, or display spot connected to ${useCase}; that little context is what makes the idea feel custom rather than generic.`,
   };
 }
 
@@ -225,13 +235,15 @@ function buildSearchQuery({ text, materials, category }) {
 
 async function fetchRelatedSource(idea) {
   const fallbackUrl = `https://www.google.com/search?q=${encodeURIComponent(idea.searchQuery)}`;
+  const fallbackSource = {
+    status: "browser-fallback",
+    title: "Search related handcraft tutorials",
+    url: fallbackUrl,
+    summary: "Open a focused web search based on the materials and request you typed.",
+  };
 
   if (location.protocol === "file:") {
-    return {
-      title: "Search related handcraft tutorials",
-      url: fallbackUrl,
-      summary: "Open a focused web search based on the materials and request you typed.",
-    };
+    return fallbackSource;
   }
 
   try {
@@ -247,12 +259,18 @@ async function fetchRelatedSource(idea) {
     });
 
     if (!response.ok) throw new Error("Source API unavailable");
-    return await response.json();
+    const source = await response.json();
+
+    if (!isSafeWebUrl(source.url)) {
+      throw new Error("Source API returned an invalid URL");
+    }
+
+    return source;
   } catch (error) {
     return {
-      title: "Search related handcraft tutorials",
-      url: fallbackUrl,
-      summary: "Open a focused web search based on the materials and request you typed.",
+      ...fallbackSource,
+      status: "network-error",
+      summary: "The related-link service is temporarily unavailable. This opens a focused search instead.",
     };
   }
 }
@@ -264,9 +282,26 @@ function renderSourceLoading(idea) {
 }
 
 function renderSource(source) {
-  sourceSummary.textContent = source.summary || "Related to the materials and request in your prompt.";
+  const statusMessages = {
+    live: source.summary || "A related handcraft source found from your prompt.",
+    "missing-key": source.summary || "Live related links need the Brave Search secret. This opens a focused search instead.",
+    error: source.summary || "Live related links are temporarily unavailable. This opens a focused search instead.",
+    "network-error": source.summary || "The related-link service is temporarily unavailable. This opens a focused search instead.",
+    "browser-fallback": source.summary || "Open a focused web search based on the materials and request you typed.",
+  };
+
+  sourceSummary.textContent = statusMessages[source.status] || "Related to the materials and request in your prompt.";
   sourceLink.textContent = source.title || "Open related link";
   sourceLink.href = source.url;
+}
+
+function isSafeWebUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "https:" || parsed.protocol === "http:";
+  } catch (error) {
+    return false;
+  }
 }
 
 function getPromptCategory(text, materials) {
@@ -278,19 +313,51 @@ function getPromptCategory(text, materials) {
   return "Custom craft";
 }
 
-function getPromptTitle({ category, primary, style }) {
+function inferPromptMood(text, style) {
+  if (text.includes("cozy") || text.includes("bedroom")) return "cozy";
+  if (text.includes("birthday") || text.includes("gift")) return "keepsake-ready";
+  if (text.includes("nature") || text.includes("flowers") || text.includes("leaf")) return "nature-inspired";
+  if (text.includes("colorful") || style.includes("Playful")) return "playful";
+  if (style.includes("Minimal")) return "quietly polished";
+  return "creative";
+}
+
+function inferUseCase(text) {
+  if (text.includes("birthday")) return "a birthday surprise";
+  if (text.includes("gift")) return "a personal handmade gift";
+  if (text.includes("desk")) return "a desk that needs a useful focal point";
+  if (text.includes("teen")) return "a teen bedroom or locker corner";
+  if (text.includes("room") || text.includes("decor")) return "a room that needs a handmade accent";
+  if (text.includes("holiday")) return "a seasonal display";
+  if (text.includes("adult")) return "a calm grown-up craft session";
+  return "the situation described in your prompt";
+}
+
+function getCreativeConcept({ category, primary, secondary, accent, mood, useCase, materials }) {
+  const hasContainer = materials.some((item) => ["jar", "box", "tube", "packaging"].some((word) => item.includes(word)));
+  const hasSoftMaterial = materials.some((item) => ["yarn", "felt", "fabric", "ribbon", "twine"].some((word) => item.includes(word)));
+  const hasPaperMaterial = materials.some((item) => ["paper", "cardboard", "newspaper", "magazine"].some((word) => item.includes(word)));
+
+  if (category === "Gift craft") return `${mood} ${primary} memory charm`;
+  if (category === "Organizer" && hasContainer) return `${primary} catch-all station with ${secondary} dividers`;
+  if (category === "Organizer") return `${primary} pocket organizer with ${accent} markers`;
+  if (category === "Home decor" && hasSoftMaterial) return `textured ${primary} wall accent for ${useCase}`;
+  if (category === "Home decor") return `${primary} mini vignette with layered ${secondary}`;
+  if (hasPaperMaterial && hasSoftMaterial) return `${primary} story panel with wrapped ${secondary}`;
+  return `${primary} art object with a ${accent} focal detail`;
+}
+
+function getPromptTitle({ concept, primary, style, mood }) {
   const prefix = style.includes("Playful")
     ? "Colorful"
     : style.includes("Minimal")
       ? "Simple"
       : style.includes("Gift")
         ? "Giftable"
-        : "Creative";
+        : titleCase(mood);
+  const cleanedConcept = concept.startsWith(mood) ? concept.slice(mood.length).trim() : concept;
 
-  if (category === "Gift craft") return `${prefix} ${titleCase(primary)} Keepsake`;
-  if (category === "Organizer") return `${prefix} ${titleCase(primary)} Organizer`;
-  if (category === "Home decor") return `${prefix} ${titleCase(primary)} Accent`;
-  return `${prefix} ${titleCase(primary)} Project`;
+  return `${prefix} ${titleCase(cleanedConcept.replace(primary, titleCase(primary)))}`;
 }
 
 function formatList(items) {
@@ -320,6 +387,112 @@ function showToast(message) {
   toastTimer = window.setTimeout(() => toast.classList.add("hidden"), 2600);
 }
 
+async function apiRequest(url, options = {}) {
+  const response = await fetch(url, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+  const payload = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new Error(payload.error || "Something went wrong. Please try again.");
+  }
+
+  return payload;
+}
+
+async function loadSession() {
+  if (location.protocol === "file:") {
+    renderAuthState();
+    renderSavedIdeas();
+    return;
+  }
+
+  try {
+    const session = await apiRequest("/api/session");
+    currentUser = session.user;
+    savedIdeas = Array.isArray(session.ideas) ? session.ideas : [];
+  } catch (error) {
+    currentUser = null;
+    savedIdeas = [];
+  }
+
+  renderAuthState();
+  renderSavedIdeas();
+  updateSaveButtonState();
+}
+
+function renderAuthState() {
+  const isSignedIn = Boolean(currentUser);
+
+  accountLabel.classList.toggle("hidden", !isSignedIn);
+  logoutButton.classList.toggle("hidden", !isSignedIn);
+  loginButton.classList.toggle("hidden", isSignedIn);
+  signupButton.classList.toggle("hidden", isSignedIn);
+  savedAuthButton.classList.toggle("hidden", isSignedIn);
+
+  if (isSignedIn) {
+    accountLabel.textContent = currentUser.name || currentUser.email;
+  }
+}
+
+function renderSavedIdeas() {
+  savedGrid.innerHTML = "";
+
+  if (!currentUser) {
+    savedEmpty.textContent = "Log in or create a free account to keep generated ideas available across visits on this server.";
+    savedEmpty.classList.remove("hidden");
+    return;
+  }
+
+  if (savedIdeas.length === 0) {
+    savedEmpty.textContent = "Your saved shelf is empty. Generate an idea, then tap the heart to keep it here.";
+    savedEmpty.classList.remove("hidden");
+    return;
+  }
+
+  savedEmpty.classList.add("hidden");
+  savedIdeas.forEach((idea) => {
+    const card = document.createElement("article");
+    card.className = "saved-card";
+
+    const savedDate = idea.savedAt
+      ? new Intl.DateTimeFormat(undefined, { month: "short", day: "numeric" }).format(new Date(idea.savedAt))
+      : "Saved";
+    const supplies = Array.isArray(idea.supplies) ? idea.supplies.slice(0, 4).join(", ") : "";
+
+    card.innerHTML = `
+      <div class="saved-card-topline">
+        <span>${escapeHtml(idea.category || "Craft idea")}</span>
+        <time>${escapeHtml(savedDate)}</time>
+      </div>
+      <h3>${escapeHtml(idea.title || "Untitled craft idea")}</h3>
+      <p>${escapeHtml(idea.intro || "A saved craft idea from your private shelf.")}</p>
+      <small>${escapeHtml(supplies)}</small>
+    `;
+    savedGrid.appendChild(card);
+  });
+}
+
+function updateSaveButtonState() {
+  const isSaved = activeIdea && savedIdeas.some((idea) => idea.title === activeIdea.title);
+  saveIdeaButton.classList.toggle("saved", Boolean(isSaved));
+  saveIdeaButton.textContent = isSaved ? "♥" : "♡";
+  saveIdeaButton.setAttribute("aria-label", isSaved ? "Idea saved" : "Save idea");
+}
+
+function escapeHtml(value) {
+  return String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function openAuth(mode) {
   authMode = mode;
   const isSignup = mode === "signup";
@@ -327,6 +500,7 @@ function openAuth(mode) {
   loginTab.classList.toggle("active", !isSignup);
   signupTab.classList.toggle("active", isSignup);
   nameField.classList.toggle("hidden", !isSignup);
+  nameInput.required = isSignup;
   authTitle.textContent = isSignup ? "Create your craft space" : "Welcome back";
   authSubtitle.textContent = isSignup
     ? "Save ideas, return to favorite projects, and keep your creations private."
@@ -356,29 +530,33 @@ document.querySelectorAll("[data-auth-tab]").forEach((button) => {
   button.addEventListener("click", () => openAuth(button.dataset.authTab));
 });
 
-authForm.addEventListener("submit", (event) => {
+authForm.addEventListener("submit", async (event) => {
   event.preventDefault();
-  const accountName = nameInput.value.trim() || emailInput.value.split("@")[0] || "maker";
-  localStorage.setItem("craftlyUser", JSON.stringify({ email: emailInput.value, name: accountName }));
-  closeAuth();
-  showToast(authMode === "signup" ? `Welcome, ${accountName}.` : "You are logged in for this preview.");
-  authForm.reset();
-});
 
-socialAuthButtons.forEach((button) => {
-  button.addEventListener("click", () => {
-    const provider = button.dataset.socialAuth;
-    localStorage.setItem(
-      "craftlyUser",
-      JSON.stringify({
-        email: `${provider.toLowerCase()}-preview@craftly.local`,
-        name: `${provider} user`,
-        provider,
+  try {
+    authSubmit.disabled = true;
+    authSubmit.textContent = authMode === "signup" ? "Creating account..." : "Logging in...";
+    const payload = await apiRequest(`/api/auth/${authMode}`, {
+      method: "POST",
+      body: JSON.stringify({
+        email: emailInput.value,
+        password: passwordInput.value,
+        name: nameInput.value,
       }),
-    );
+    });
+
+    const signedInUser = payload.user;
+    currentUser = signedInUser;
+    await loadSession();
     closeAuth();
-    showToast(`Signed in with ${provider} for this preview.`);
-  });
+    showToast(authMode === "signup" ? `Welcome, ${signedInUser.name}.` : "You are logged in.");
+    authForm.reset();
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    authSubmit.disabled = false;
+    authSubmit.textContent = authMode === "signup" ? "Sign up" : "Log in";
+  }
 });
 
 generateButton.addEventListener("click", renderIdea);
@@ -389,15 +567,45 @@ surpriseButton.addEventListener("click", () => {
   renderIdea();
 });
 
-saveIdeaButton.addEventListener("click", () => {
+saveIdeaButton.addEventListener("click", async () => {
   if (!activeIdea) return;
 
-  const savedIdeas = JSON.parse(localStorage.getItem("craftlySavedIdeas") || "[]");
-  savedIdeas.unshift({ ...activeIdea, savedAt: new Date().toISOString() });
-  localStorage.setItem("craftlySavedIdeas", JSON.stringify(savedIdeas.slice(0, 12)));
-  saveIdeaButton.classList.add("saved");
-  saveIdeaButton.textContent = "♥";
-  showToast("Idea saved on this device.");
+  if (!currentUser) {
+    openAuth("signup");
+    showToast("Create an account or log in to save ideas privately.");
+    return;
+  }
+
+  try {
+    saveIdeaButton.disabled = true;
+    const payload = await apiRequest("/api/ideas", {
+      method: "POST",
+      body: JSON.stringify({ idea: activeIdea }),
+    });
+    savedIdeas = payload.ideas || [];
+    renderSavedIdeas();
+    updateSaveButtonState();
+    showToast("Idea saved to your private shelf.");
+  } catch (error) {
+    showToast(error.message);
+  } finally {
+    saveIdeaButton.disabled = false;
+  }
+});
+
+logoutButton.addEventListener("click", async () => {
+  try {
+    await apiRequest("/api/auth/logout", { method: "POST", body: "{}" });
+  } catch (error) {
+    // The local UI can still clear when the session has already expired.
+  }
+
+  currentUser = null;
+  savedIdeas = [];
+  renderAuthState();
+  renderSavedIdeas();
+  updateSaveButtonState();
+  showToast("You are logged out.");
 });
 
 menuToggle.addEventListener("click", () => {
@@ -416,3 +624,5 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") closeAuth();
   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") renderIdea();
 });
+
+loadSession();

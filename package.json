@@ -4,7 +4,11 @@
   "private": true,
   "description": "A handcraft ideas MVP with prompt-bound project generation and related web inspiration links.",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "check": "node --check server.js && node --check script.js"
+  },
+  "dependencies": {
+    "pg": "^8.16.3"
   },
   "engines": {
     "node": ">=18"

@@ -20,13 +20,16 @@
       </a>
       <nav aria-label="Primary navigation">
         <a href="#generator">Generate</a>
+        <a href="#saved">Saved ideas</a>
         <a href="#how-it-works">How it works</a>
         <a href="#privacy">Privacy</a>
         <a href="#terms">Terms</a>
       </nav>
       <div class="auth-actions">
-        <button class="ghost-button" data-auth-open="login">Log in</button>
-        <button class="primary-button" data-auth-open="signup">Sign up</button>
+        <span class="account-label hidden" id="accountLabel"></span>
+        <button class="ghost-button hidden" id="logoutButton" type="button">Log out</button>
+        <button class="ghost-button" id="loginButton" data-auth-open="login" type="button">Log in</button>
+        <button class="primary-button" id="signupButton" data-auth-open="signup" type="button">Sign up</button>
       </div>
       <button class="icon-button menu-toggle" aria-label="Open navigation" aria-expanded="false">
         <span></span>
@@ -129,8 +132,8 @@
               <span class="spark-badge">Start here</span>
               <h3 id="ideaTitle">Your first handcraft idea will appear here.</h3>
               <p>
-                You will get one complete concept based only on the materials in your prompt, plus
-                step-by-step instructions and a finishing touch.
+                You will get one complete concept rooted in your prompt, plus creative steps,
+                practical supplies, and a finishing touch.
               </p>
             </div>
             <article class="idea-card hidden" id="ideaCard">
@@ -169,13 +172,29 @@
         </div>
       </section>
 
+      <section class="saved-section" id="saved">
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">Saved ideas</p>
+            <h2>Your private craft shelf.</h2>
+          </div>
+          <button class="secondary-button" id="savedAuthButton" data-auth-open="signup" type="button">Create account to save</button>
+        </div>
+        <div class="saved-panel">
+          <p class="saved-empty" id="savedEmpty">
+            Log in or create a free account to keep generated ideas available across visits on this server.
+          </p>
+          <div class="saved-grid" id="savedGrid"></div>
+        </div>
+      </section>
+
       <section class="end-details" aria-label="App details">
         <div class="detail-block" id="how-it-works">
           <p class="eyebrow">How it works</p>
           <h2>Simple from prompt to project.</h2>
           <div class="detail-list">
             <p><strong>Prompt naturally.</strong> Mention materials, age range, room, holiday, budget, or mood.</p>
-            <p><strong>Get one strong idea.</strong> Craftly keeps the result focused instead of giving you list overload.</p>
+            <p><strong>Get one strong idea.</strong> Craftly keeps the result focused while adding a little creative interpretation.</p>
             <p><strong>Make it yours.</strong> Follow the steps, then personalize the finishing touch.</p>
           </div>
         </div>
@@ -202,17 +221,6 @@
         </div>
         <h2 id="authTitle">Welcome back</h2>
         <p id="authSubtitle">Save your favorite ideas and revisit them later.</p>
-        <div class="social-auth" aria-label="Social sign in options">
-          <button class="social-button apple-button" type="button" data-social-auth="Apple">
-            <span class="social-mark" aria-hidden="true"></span>
-            <span>Continue with Apple</span>
-          </button>
-          <button class="social-button google-button" type="button" data-social-auth="Google">
-            <span class="google-mark" aria-hidden="true">G</span>
-            <span>Continue with Google</span>
-          </button>
-        </div>
-        <div class="auth-divider"><span>or</span></div>
         <form id="authForm">
           <label>
             Email
@@ -235,7 +243,7 @@
           </label>
           <button class="primary-button large full" type="submit" id="authSubmit">Log in</button>
         </form>
-        <p class="auth-note">MVP preview only. Authentication is simulated locally for now.</p>
+        <p class="auth-note">Your account uses this app's lightweight private storage. OAuth sign-in can be added later without changing the saved-ideas flow.</p>
       </section>
     </div>
 
